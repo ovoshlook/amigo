@@ -142,6 +142,7 @@ func newAMIAdapter(s *Settings, eventEmitter func(string, string)) (*amiAdapter,
 }
 
 func (a *amiAdapter) CloseNetworkConnection() {
+	a.reconnect = false
 	a.conn.Close()
 }
 
