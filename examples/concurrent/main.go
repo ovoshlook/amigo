@@ -13,7 +13,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/ivahaev/amigo"
+	"github.com/ovoshlook/amigo"
 )
 
 var a *amigo.Amigo
