@@ -99,8 +99,8 @@ func (a *Amigo) Action(action map[string]string) (map[string]string, error) {
 		return e, nil
 	}
 
-	if (strings.ToLower(action["Action"]) == "logoff") {
-		a.ami.reconnect = false;
+	if strings.ToLower(action["Action"]) == "logoff" {
+		a.ami.reconnect = false
 	}
 	return result, nil
 }
@@ -304,6 +304,10 @@ func (a *Amigo) UnregisterHandler(event string, f handlerFunc) error {
 	}
 	a.handlers[event] = nil
 	return nil
+}
+
+func (a *Amigo) CloseNetworkConnection() {
+	a.ami.CloseNetworkConnection()
 }
 
 func (a *Amigo) emitEvent(name, message string) {

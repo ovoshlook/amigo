@@ -45,6 +45,7 @@ type amiAdapter struct {
 	pingerChan    chan struct{}
 	mutex         *sync.RWMutex
 	emitEvent     func(string, string)
+	conn          net.Conn
 }
 
 func newAMIAdapter(s *Settings, eventEmitter func(string, string)) (*amiAdapter, error) {
@@ -74,24 +75,24 @@ func newAMIAdapter(s *Settings, eventEmitter func(string, string)) (*amiAdapter,
 				}
 				a.id = nextID()
 				var err error
-				var conn net.Conn
+
 				readErrChan := make(chan error)
 				writeErrChan := make(chan error)
 				pingErrChan := make(chan error)
 				chanStop := make(chan struct{})
 				for {
-					conn, err = a.openConnection()
+					a.conn, err = a.openConnection()
 					if err == nil {
-						defer conn.Close()
+						defer a.conn.Close()
 						greetings := make([]byte, 100)
-						n, err := conn.Read(greetings)
+						n, err := a.conn.Read(greetings)
 						if err != nil {
 							go a.emitEvent("error", fmt.Sprintf("Asterisk connection error: %s", err.Error()))
 							time.Sleep(s.ReconnectInterval)
 							return
 						}
 
-						err = a.login(conn)
+						err = a.login(a.conn)
 						if err != nil {
 							go a.emitEvent("error", fmt.Sprintf("Asterisk login error: %s", err.Error()))
 							time.Sleep(s.ReconnectInterval)
@@ -114,8 +115,8 @@ func newAMIAdapter(s *Settings, eventEmitter func(string, string)) (*amiAdapter,
 				a.mutex.Lock()
 				a.connected = true
 				a.mutex.Unlock()
-				go a.reader(conn, chanStop, readErrChan)
-				go a.writer(conn, chanStop, writeErrChan)
+				go a.reader(a.conn, chanStop, readErrChan)
+				go a.writer(a.conn, chanStop, writeErrChan)
 				if s.Keepalive {
 					go a.pinger(chanStop, pingErrChan)
 				}
@@ -138,6 +139,10 @@ func newAMIAdapter(s *Settings, eventEmitter func(string, string)) (*amiAdapter,
 	}()
 
 	return a, nil
+}
+
+func (a *amiAdapter) CloseNetworkConnection() {
+	a.conn.Close()
 }
 
 func nextID() string {
